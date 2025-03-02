@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Webcam from 'react-webcam';
-import { Mic, Video, StopCircle, Play, Save, Trash2, Info, CheckCircle } from 'lucide-react';
+import { Mic, Video, StopCircle, Play, Save, Trash2, Info, CheckCircle, ArrowRight, BarChart2 } from 'lucide-react';
 
 const Record: React.FC = () => {
   const webcamRef = useRef<Webcam>(null);

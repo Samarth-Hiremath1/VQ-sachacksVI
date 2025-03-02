@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart2, Mic, Video, MessageSquare, Clock, Volume2, Activity, Award, ArrowRight } from 'lucide-react';
+import { BarChart2, Mic, Video, MessageSquare, Clock, Volume2, Activity, Award, ArrowRight, Calendar } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, LineChart, Line, Legend } from 'recharts';
 
 // Mock data for charts
