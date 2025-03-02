@@ -16,16 +16,16 @@ const Record: React.FC = () => {
   const [recordingComplete, setRecordingComplete] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
+  const [transcript, setTranscript] = useState<string>(''); // Live transcript state
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const poseRef = useRef<Pose | null>(null);
   const cameraRef = useRef<cameraUtils.Camera | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   // Initialize MediaPipe Pose
   useEffect(() => {
     const pose = new Pose({
-      locateFile: (file) => {
-        return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
-      },
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
     });
 
     pose.setOptions({
@@ -42,26 +42,20 @@ const Record: React.FC = () => {
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        // Match canvas size to video
         canvas.width = webcamRef.current.video.videoWidth;
         canvas.height = webcamRef.current.video.videoHeight;
-
-        // Clear previous drawings
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Draw pose landmarks and connections if detected
         if (results.poseLandmarks) {
           drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, {
-            color: '#00FF00', // Green lines for connections
+            color: '#00FF00',
             lineWidth: 4,
           });
           drawLandmarks(ctx, results.poseLandmarks, {
-            color: '#FF0000', // Red dots for landmarks
+            color: '#FF0000',
             lineWidth: 2,
             radius: 4,
           });
-        } else {
-          console.log('No pose landmarks detected');
         }
       }
     });
@@ -73,7 +67,51 @@ const Record: React.FC = () => {
     };
   }, []);
 
-  // Start camera and pose detection when webcam is ready
+  // Initialize Web Speech API
+  useEffect(() => {
+    const SpeechRecognition = (window.SpeechRecognition || window.webkitSpeechRecognition) as new () => SpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcriptPiece = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcriptPiece + ' ';
+          } else {
+            interimTranscript += transcriptPiece;
+          }
+        }
+        setTranscript(finalTranscript + interimTranscript);
+      };
+
+      recognition.onerror = (event: Event) => {
+        console.error('Speech recognition error:', event);
+      };
+
+      recognition.onend = () => {
+        if (recording) recognition.start(); // Restart if still recording
+      };
+
+      recognitionRef.current = recognition;
+    } else {
+      console.error('SpeechRecognition API not supported in this browser.');
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, [recording]);
+
+  // Start camera and pose detection
   useEffect(() => {
     const startCamera = async () => {
       if (webcamRef.current?.video && poseRef.current && !cameraRef.current) {
@@ -89,7 +127,6 @@ const Record: React.FC = () => {
         });
         await camera.start();
         cameraRef.current = camera;
-        console.log('Camera and pose detection started');
       }
     };
 
@@ -99,7 +136,6 @@ const Record: React.FC = () => {
       if (cameraRef.current) {
         cameraRef.current.stop();
         cameraRef.current = null;
-        console.log('Camera stopped');
       }
     };
   }, []);
@@ -110,6 +146,7 @@ const Record: React.FC = () => {
     setRecordingTime(0);
     setRecordingComplete(false);
     setAnalysisComplete(false);
+    setTranscript('');
 
     if (webcamRef.current && webcamRef.current.stream) {
       mediaRecorderRef.current = new MediaRecorder(webcamRef.current.stream, {
@@ -123,17 +160,23 @@ const Record: React.FC = () => {
       });
 
       mediaRecorderRef.current.start();
-      console.log('Recording started');
 
       timerRef.current = setInterval(() => {
         setRecordingTime((prevTime) => prevTime + 1);
       }, 1000);
+
+      if (recognitionRef.current) {
+        recognitionRef.current.start();
+      }
     }
   }, []);
 
   const handleStopRecording = useCallback(() => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
+    }
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
     }
     setRecording(false);
     setRecordingComplete(true);
@@ -142,7 +185,6 @@ const Record: React.FC = () => {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    console.log('Recording stopped');
   }, []);
 
   const handleAnalyze = useCallback(() => {
@@ -172,6 +214,7 @@ const Record: React.FC = () => {
     setRecordingTime(0);
     setRecordingComplete(false);
     setAnalysisComplete(false);
+    setTranscript('');
   }, []);
 
   const formatTime = (seconds: number): string => {
@@ -186,7 +229,7 @@ const Record: React.FC = () => {
         <div className="text-center mb-12">
           <h1 className="text-3xl font-bold text-gray-900">Record Your Presentation</h1>
           <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
-            Capture your presentation with pose tracking for AI analysis and expert feedback.
+            Capture your presentation with pose tracking and live speech-to-text for AI analysis.
           </p>
         </div>
 
@@ -334,6 +377,17 @@ const Record: React.FC = () => {
           </div>
         </div>
 
+        {/* Live Speech-to-Text Component */}
+        {recording && (
+          <div className="mt-6 bg-white rounded-lg shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Live Transcript</h3>
+            <div className="text-gray-700 text-base leading-relaxed">
+              {transcript || 'Listening...'}
+            </div>
+          </div>
+        )}
+
+        {/* Recording Tips Section */}
         <div className="mt-8 bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="p-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Recording Tips</h2>
@@ -347,8 +401,7 @@ const Record: React.FC = () => {
                 <div className="ml-4">
                   <h3 className="text-lg font-medium text-gray-900">Video Quality</h3>
                   <p className="mt-2 text-gray-600">
-                    Ensure you're in a well-lit area with a neutral background. Position yourself so your upper body
-                    is visible.
+                    Ensure you're in a well-lit area with a neutral background. Position yourself so your upper body is visible.
                   </p>
                 </div>
               </div>
