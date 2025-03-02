@@ -1,10 +1,14 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Webcam from 'react-webcam';
 import { Mic, Video, StopCircle, Play, Save, Trash2, Info, CheckCircle, ArrowRight, BarChart2 } from 'lucide-react';
+import { Pose } from '@mediapipe/pose';
+import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils';
+import * as cameraUtils from '@mediapipe/camera_utils';
 
 const Record: React.FC = () => {
   const webcamRef = useRef<Webcam>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [recording, setRecording] = useState(false);
   const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
@@ -13,6 +17,92 @@ const Record: React.FC = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const poseRef = useRef<Pose | null>(null);
+  const cameraRef = useRef<cameraUtils.Camera | null>(null);
+
+  // Initialize MediaPipe Pose
+  useEffect(() => {
+    const pose = new Pose({
+      locateFile: (file) => {
+        return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
+      },
+    });
+
+    pose.setOptions({
+      modelComplexity: 1,
+      smoothLandmarks: true,
+      enableSegmentation: false,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5,
+    });
+
+    pose.onResults((results) => {
+      if (canvasRef.current && webcamRef.current?.video) {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Match canvas size to video
+        canvas.width = webcamRef.current.video.videoWidth;
+        canvas.height = webcamRef.current.video.videoHeight;
+
+        // Clear previous drawings
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw pose landmarks and connections if detected
+        if (results.poseLandmarks) {
+          drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, {
+            color: '#00FF00', // Green lines for connections
+            lineWidth: 4,
+          });
+          drawLandmarks(ctx, results.poseLandmarks, {
+            color: '#FF0000', // Red dots for landmarks
+            lineWidth: 2,
+            radius: 4,
+          });
+        } else {
+          console.log('No pose landmarks detected');
+        }
+      }
+    });
+
+    poseRef.current = pose;
+
+    return () => {
+      pose.close();
+    };
+  }, []);
+
+  // Start camera and pose detection when webcam is ready
+  useEffect(() => {
+    const startCamera = async () => {
+      if (webcamRef.current?.video && poseRef.current && !cameraRef.current) {
+        const videoElement = webcamRef.current.video;
+        const camera = new cameraUtils.Camera(videoElement, {
+          onFrame: async () => {
+            if (poseRef.current && videoElement) {
+              await poseRef.current.send({ image: videoElement });
+            }
+          },
+          width: 1280,
+          height: 720,
+        });
+        await camera.start();
+        cameraRef.current = camera;
+        console.log('Camera and pose detection started');
+      }
+    };
+
+    startCamera();
+
+    return () => {
+      if (cameraRef.current) {
+        cameraRef.current.stop();
+        cameraRef.current = null;
+        console.log('Camera stopped');
+      }
+    };
+  }, []);
 
   const handleStartRecording = useCallback(() => {
     setRecording(true);
@@ -20,26 +110,26 @@ const Record: React.FC = () => {
     setRecordingTime(0);
     setRecordingComplete(false);
     setAnalysisComplete(false);
-    
+
     if (webcamRef.current && webcamRef.current.stream) {
       mediaRecorderRef.current = new MediaRecorder(webcamRef.current.stream, {
         mimeType: 'video/webm',
       });
-      
+
       mediaRecorderRef.current.addEventListener('dataavailable', ({ data }) => {
         if (data.size > 0) {
           setRecordedChunks((prev) => [...prev, data]);
         }
       });
-      
+
       mediaRecorderRef.current.start();
-      
-      // Start timer
+      console.log('Recording started');
+
       timerRef.current = setInterval(() => {
         setRecordingTime((prevTime) => prevTime + 1);
       }, 1000);
     }
-  }, [webcamRef, setRecordingTime, setRecordedChunks]);
+  }, []);
 
   const handleStopRecording = useCallback(() => {
     if (mediaRecorderRef.current) {
@@ -47,18 +137,16 @@ const Record: React.FC = () => {
     }
     setRecording(false);
     setRecordingComplete(true);
-    
-    // Clear timer
+
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-  }, [mediaRecorderRef, setRecording]);
+    console.log('Recording stopped');
+  }, []);
 
   const handleAnalyze = useCallback(() => {
     setAnalyzing(true);
-    
-    // Simulate analysis process
     setTimeout(() => {
       setAnalyzing(false);
       setAnalysisComplete(true);
@@ -67,9 +155,7 @@ const Record: React.FC = () => {
 
   const handleDownload = useCallback(() => {
     if (recordedChunks.length) {
-      const blob = new Blob(recordedChunks, {
-        type: 'video/webm',
-      });
+      const blob = new Blob(recordedChunks, { type: 'video/webm' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       document.body.appendChild(a);
@@ -100,7 +186,7 @@ const Record: React.FC = () => {
         <div className="text-center mb-12">
           <h1 className="text-3xl font-bold text-gray-900">Record Your Presentation</h1>
           <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
-            Capture your presentation for AI analysis and expert feedback.
+            Capture your presentation with pose tracking for AI analysis and expert feedback.
           </p>
         </div>
 
@@ -109,9 +195,11 @@ const Record: React.FC = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-800">Recording Studio</h2>
               <div className="flex items-center space-x-2">
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                  recording ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-                }`}>
+                <span
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                    recording ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
                   {recording ? (
                     <>
                       <span className="w-2 h-2 bg-red-600 rounded-full mr-2 animate-pulse"></span>
@@ -136,9 +224,16 @@ const Record: React.FC = () => {
                 facingMode: 'user',
               }}
             />
-            
+            <canvas
+              ref={canvasRef}
+              className="absolute top-0 left-0 w-full h-full"
+              style={{ zIndex: 10 }}
+            />
             {recordingComplete && recordedChunks.length > 0 && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+              <div
+                className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50"
+                style={{ zIndex: 20 }}
+              >
                 <div className="text-white text-center">
                   <CheckCircle className="h-16 w-16 mx-auto text-green-400" />
                   <p className="mt-4 text-xl font-semibold">Recording Complete!</p>
@@ -160,7 +255,6 @@ const Record: React.FC = () => {
                     Start Recording
                   </button>
                 )}
-                
                 {recording && (
                   <button
                     onClick={handleStopRecording}
@@ -170,7 +264,6 @@ const Record: React.FC = () => {
                     Stop Recording
                   </button>
                 )}
-                
                 {recordingComplete && !analysisComplete && (
                   <>
                     <button
@@ -180,9 +273,25 @@ const Record: React.FC = () => {
                     >
                       {analyzing ? (
                         <>
-                          <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          <svg
+                            className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
                           </svg>
                           Analyzing...
                         </>
@@ -193,7 +302,6 @@ const Record: React.FC = () => {
                         </>
                       )}
                     </button>
-                    
                     <button
                       onClick={handleDownload}
                       className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -203,7 +311,6 @@ const Record: React.FC = () => {
                     </button>
                   </>
                 )}
-                
                 {recordingComplete && (
                   <button
                     onClick={handleReset}
@@ -214,7 +321,6 @@ const Record: React.FC = () => {
                   </button>
                 )}
               </div>
-              
               {analysisComplete && (
                 <Link
                   to="/dashboard"
@@ -231,7 +337,6 @@ const Record: React.FC = () => {
         <div className="mt-8 bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="p-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Recording Tips</h2>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="flex">
                 <div className="flex-shrink-0">
@@ -242,11 +347,11 @@ const Record: React.FC = () => {
                 <div className="ml-4">
                   <h3 className="text-lg font-medium text-gray-900">Video Quality</h3>
                   <p className="mt-2 text-gray-600">
-                    Ensure you're in a well-lit area with a neutral background. Position yourself so your upper body is visible.
+                    Ensure you're in a well-lit area with a neutral background. Position yourself so your upper body
+                    is visible.
                   </p>
                 </div>
               </div>
-              
               <div className="flex">
                 <div className="flex-shrink-0">
                   <div className="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-100 text-indigo-600">
@@ -260,7 +365,6 @@ const Record: React.FC = () => {
                   </p>
                 </div>
               </div>
-              
               <div className="flex">
                 <div className="flex-shrink-0">
                   <div className="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-100 text-indigo-600">
@@ -274,7 +378,6 @@ const Record: React.FC = () => {
                   </p>
                 </div>
               </div>
-              
               <div className="flex">
                 <div className="flex-shrink-0">
                   <div className="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-100 text-indigo-600">
@@ -295,5 +398,14 @@ const Record: React.FC = () => {
     </div>
   );
 };
+
+// MediaPipe Pose connections
+const POSE_CONNECTIONS: [number, number][] = [
+  [11, 13], [13, 15], [15, 17], [15, 19], [15, 21], [17, 19],
+  [12, 14], [14, 16], [16, 18], [16, 20], [16, 22], [18, 20],
+  [11, 12], [11, 23], [12, 24], [23, 24], [23, 25], [24, 26],
+  [25, 27], [26, 28], [27, 29], [28, 30], [29, 31], [30, 32],
+  [27, 31], [28, 32],
+];
 
 export default Record;
