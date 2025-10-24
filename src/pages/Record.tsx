@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Webcam from 'react-webcam';
 import { Mic, Video, StopCircle, Play, Save, Trash2, Info, CheckCircle, ArrowRight, BarChart2 } from 'lucide-react';
-import { Pose } from '@mediapipe/pose';
+import { Pose, POSE_CONNECTIONS } from '@mediapipe/pose'; // Ensure POSE_CONNECTIONS is imported
 import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils';
 import * as cameraUtils from '@mediapipe/camera_utils';
 
@@ -42,17 +42,21 @@ const Record: React.FC = () => {
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
+        // Match canvas size to video
         canvas.width = webcamRef.current.video.videoWidth;
         canvas.height = webcamRef.current.video.videoHeight;
+
+        // Clear the canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+        // Draw pose landmarks and connections if detected
         if (results.poseLandmarks) {
           drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, {
-            color: '#00FF00',
+            color: '#00FF00', // Green lines
             lineWidth: 4,
           });
           drawLandmarks(ctx, results.poseLandmarks, {
-            color: '#FF0000',
+            color: '#FF0000', // Red points
             lineWidth: 2,
             radius: 4,
           });
@@ -269,7 +273,7 @@ const Record: React.FC = () => {
             />
             <canvas
               ref={canvasRef}
-              className="absolute top-0 left-0 w-full h-full"
+              className="absolute top-0 left-0 w-full h-full pointer-events-none" // Ensure canvas doesn't block interactions
               style={{ zIndex: 10 }}
             />
             {recordingComplete && recordedChunks.length > 0 && (
@@ -451,14 +455,5 @@ const Record: React.FC = () => {
     </div>
   );
 };
-
-// MediaPipe Pose connections
-const POSE_CONNECTIONS: [number, number][] = [
-  [11, 13], [13, 15], [15, 17], [15, 19], [15, 21], [17, 19],
-  [12, 14], [14, 16], [16, 18], [16, 20], [16, 22], [18, 20],
-  [11, 12], [11, 23], [12, 24], [23, 24], [23, 25], [24, 26],
-  [25, 27], [26, 28], [27, 29], [28, 30], [29, 31], [30, 32],
-  [27, 31], [28, 32],
-];
 
 export default Record;

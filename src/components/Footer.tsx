@@ -10,7 +10,7 @@ const Footer: React.FC = () => {
           <div>
             <Link to="/" className="flex items-center">
               <Mic className="h-8 w-8 mr-2" />
-              <span className="font-bold text-xl">PresentPro</span>
+              <span className="font-bold text-xl">VQ</span>
             </Link>
             <p className="mt-4 text-gray-400">
               Elevate your presentation skills with AI-powered feedback and coaching from industry experts.
@@ -33,7 +33,7 @@ const Footer: React.FC = () => {
             <ul className="space-y-2">
               <li className="flex items-center">
                 <Mail className="h-5 w-5 mr-2 text-indigo-400" />
-                <span className="text-gray-400">support@presentpro.com</span>
+                <span className="text-gray-400">support@vq.com</span>
               </li>
               <li className="flex items-center">
                 <Phone className="h-5 w-5 mr-2 text-indigo-400" />

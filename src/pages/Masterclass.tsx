@@ -98,6 +98,7 @@ const Masterclass: React.FC = () => {
             Learn from world-renowned presentation experts and take your skills to the next level.
           </p>
         </div>
+        
 
         {/* Featured Masterclass */}
         <div className="bg-indigo-700 rounded-xl overflow-hidden shadow-xl mb-12">
@@ -135,6 +136,85 @@ const Masterclass: React.FC = () => {
           </div>
         </div>
 
+        {/* Expert Instructors */}
+        <div className="mt-16 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-8">Our Expert Instructors</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <img
+                src="https://pe.tedcdn.com/images/ted/b6cccc7593928f4861601289b937d19dac95bed9_1600x1200.jpg"
+                alt="Simon Sinek"
+                className="w-full h-64 object-cover"
+              />
+              <div className="p-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Simon Sinek</h3>
+                <p className="text-gray-600 mb-4">
+                  Renowned author and TED speaker known for his expertise in leadership communication and the power of purpose-driven presentations.
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">12 Masterclasses</span>
+                  <Link
+                    to="/masterclass?instructor=Simon%20Sinek"
+                    className="text-indigo-600 hover:text-indigo-500 font-medium"
+                  >
+                    View All
+                  </Link>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <img
+                src="https://www.seymourcentre.com/media/lxbhfn53/webpage-alternate-01.jpg?anchor=center&mode=crop&width=1024&height=768&rnd=133699326099570000"
+                alt="Vinh Giang"
+                className="w-full h-64 object-cover"
+              />
+              <div className="p-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Vinh Giang</h3>
+                <p className="text-gray-600 mb-4">
+                  Magician turned communication expert who teaches the psychology of engagement and non-verbal communication techniques.
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">8 Masterclasses</span>
+                  <Link
+                    to="/masterclass?instructor=Vinh%20Giang"
+                    className="text-indigo-600 hover:text-indigo-500 font-medium"
+                  >
+                    View All
+                  </Link>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <img
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Tony_Robbins.jpg/640px-Tony_Robbins.jpg"
+                alt="Tony Robbins"
+                className="w-full h-64 object-cover"
+              />
+              <div className="p-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Tony Robbins</h3>
+                <p className="text-gray-600 mb-4">
+                  World-famous motivational speaker and coach who specializes in powerful delivery, audience engagement, and persuasive speaking.
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">10 Masterclasses</span>
+                  <Link
+                    to="/masterclass?instructor=Tony%20Robbins"
+                    className="text-indigo-600 hover:text-indigo-500 font-medium"
+                  >
+                    View All
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+
+        
         {/* Search and Filters */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <div className="md:flex md:items-center md:justify-between">
@@ -240,81 +320,7 @@ const Masterclass: React.FC = () => {
           </div>
         )}
 
-        {/* Expert Instructors */}
-        <div className="mt-16">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8">Our Expert Instructors</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <img
-                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                alt="Simon Sinek"
-                className="w-full h-64 object-cover"
-              />
-              <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Simon Sinek</h3>
-                <p className="text-gray-600 mb-4">
-                  Renowned author and TED speaker known for his expertise in leadership communication and the power of purpose-driven presentations.
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">12 Masterclasses</span>
-                  <Link
-                    to="/masterclass?instructor=Simon%20Sinek"
-                    className="text-indigo-600 hover:text-indigo-500 font-medium"
-                  >
-                    View All
-                  </Link>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <img
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                alt="Vinh Giang"
-                className="w-full h-64 object-cover"
-              />
-              <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Vinh Giang</h3>
-                <p className="text-gray-600 mb-4">
-                  Magician turned communication expert who teaches the psychology of engagement and non-verbal communication techniques.
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">8 Masterclasses</span>
-                  <Link
-                    to="/masterclass?instructor=Vinh%20Giang"
-                    className="text-indigo-600 hover:text-indigo-500 font-medium"
-                  >
-                    View All
-                  </Link>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <img
-                src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                alt="Tony Robbins"
-                className="w-full h-64 object-cover"
-              />
-              <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Tony Robbins</h3>
-                <p className="text-gray-600 mb-4">
-                  World-famous motivational speaker and coach who specializes in powerful delivery, audience engagement, and persuasive speaking.
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">10 Masterclasses</span>
-                  <Link
-                    to="/masterclass?instructor=Tony%20Robbins"
-                    className="text-indigo-600 hover:text-indigo-500 font-medium"
-                  >
-                    View All
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        
 
         {/* CTA for 1-on-1 Coaching */}
         <div className="mt-16 bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-xl shadow-xl overflow-hidden">

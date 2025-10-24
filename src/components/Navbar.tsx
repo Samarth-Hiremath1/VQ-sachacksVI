@@ -25,7 +25,7 @@ const Navbar: React.FC = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <Mic className="h-8 w-8 mr-2" />
-              <span className="font-bold text-xl">PresentPro</span>
+              <span className="font-bold text-xl">VQ</span>
             </Link>
           </div>
           

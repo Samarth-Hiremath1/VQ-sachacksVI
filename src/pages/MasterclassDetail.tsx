@@ -172,13 +172,13 @@ const MasterclassDetail: React.FC = () => {
   useEffect(() => {
     // Find the masterclass by ID
     const foundMasterclass = masterclasses.find(mc => mc.id.toString() === id);
-    
+
     if (foundMasterclass) {
       setMasterclass(foundMasterclass);
-      
+
       // Get related masterclasses
       if (foundMasterclass.relatedMasterclasses) {
-        const related = masterclasses.filter(mc => 
+        const related = masterclasses.filter(mc =>
           foundMasterclass.relatedMasterclasses.includes(mc.id)
         );
         setRelatedClasses(related);
@@ -271,16 +271,16 @@ const MasterclassDetail: React.FC = () => {
                   <span>•</span>
                   <span>{masterclass.level}</span>
                 </div>
-                
+
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
                   {masterclass.title}
                 </h1>
-                
+
                 <div className="flex items-center mb-4">
                   <span className="text-gray-700 font-medium mr-1">By</span>
                   <span className="text-indigo-600 font-medium">{masterclass.instructor}</span>
                 </div>
-                
+
                 <div className="flex items-center">
                   <div className="flex items-center">
                     <Star className="h-5 w-5 text-yellow-400" />
@@ -290,43 +290,40 @@ const MasterclassDetail: React.FC = () => {
                   <span className="text-gray-500">{masterclass.reviews} reviews</span>
                 </div>
               </div>
-              
+
               {/* Tabs */}
               <div className="border-b border-gray-200">
                 <nav className="flex -mb-px">
                   <button
                     onClick={() => setActiveTab('overview')}
-                    className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${
-                      activeTab === 'overview'
+                    className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${activeTab === 'overview'
                         ? 'border-indigo-500 text-indigo-600'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
+                      }`}
                   >
                     Overview
                   </button>
                   <button
                     onClick={() => setActiveTab('modules')}
-                    className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${
-                      activeTab === 'modules'
+                    className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${activeTab === 'modules'
                         ? 'border-indigo-500 text-indigo-600'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
+                      }`}
                   >
                     Modules
                   </button>
                   <button
                     onClick={() => setActiveTab('resources')}
-                    className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${
-                      activeTab === 'resources'
+                    className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${activeTab === 'resources'
                         ? 'border-indigo-500 text-indigo-600'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
+                      }`}
                   >
                     Resources
                   </button>
                 </nav>
               </div>
-              
+
               {/* Tab Content */}
               <div className="p-6">
                 {activeTab === 'overview' && (
@@ -335,7 +332,7 @@ const MasterclassDetail: React.FC = () => {
                     <p className="text-gray-700 mb-6">
                       {masterclass.longDescription}
                     </p>
-                    
+
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">What You'll Learn</h3>
                     <ul className="space-y-2 mb-6">
                       {masterclass.modules.map((module: any, index: number) => (
@@ -345,7 +342,7 @@ const MasterclassDetail: React.FC = () => {
                         </li>
                       ))}
                     </ul>
-                    
+
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">Who This Masterclass Is For</h3>
                     <ul className="space-y-2">
                       <li className="flex items-start">
@@ -363,7 +360,7 @@ const MasterclassDetail: React.FC = () => {
                     </ul>
                   </div>
                 )}
-                
+
                 {activeTab === 'modules' && (
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900 mb-4">Course Content</h2>
@@ -395,7 +392,7 @@ const MasterclassDetail: React.FC = () => {
                     </div>
                   </div>
                 )}
-                
+
                 {activeTab === 'resources' && (
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900 mb-4">Downloadable Resources</h2>
@@ -421,13 +418,13 @@ const MasterclassDetail: React.FC = () => {
                 )}
               </div>
             </div>
-            
+
             {/* Reviews Section */}
             <div className="mt-8 bg-white rounded-lg shadow-md overflow-hidden">
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-900">Student Reviews</h2>
               </div>
-              
+
               <div className="p-6">
                 <div className="flex items-center mb-6">
                   <div className="flex items-center mr-4">
@@ -438,7 +435,7 @@ const MasterclassDetail: React.FC = () => {
                     Based on {masterclass.reviews} reviews
                   </div>
                 </div>
-                
+
                 <div className="space-y-6">
                   <div className="border-b border-gray-200 pb-6">
                     <div className="flex items-start">
@@ -463,7 +460,7 @@ const MasterclassDetail: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="border-b border-gray-200 pb-6">
                     <div className="flex items-start">
                       <img
@@ -490,7 +487,7 @@ const MasterclassDetail: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div>
                     <div className="flex items-start">
                       <img
@@ -515,7 +512,7 @@ const MasterclassDetail: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="mt-6 text-center">
                   <button className="text-indigo-600 hover:text-indigo-500 font-medium">
                     View All Reviews
@@ -524,7 +521,7 @@ const MasterclassDetail: React.FC = () => {
               </div>
             </div>
           </div>
-          
+
           {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-md overflow-hidden sticky top-6">
@@ -535,17 +532,18 @@ const MasterclassDetail: React.FC = () => {
                     View Profile
                   </button>
                 </div>
-                
+
                 <div className="flex items-center">
                   <img
-                    src={masterclass.instructor === "Simon Sinek" 
-                      ? "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                      : masterclass.instructor === "Vinh Giang"
-                      ? "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                      : "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+                    src={
+                      masterclass.instructor === "Simon Sinek"
+                        ? "https://pe.tedcdn.com/images/ted/b6cccc7593928f4861601289b937d19dac95bed9_1600x1200.jpg"
+                        : masterclass.instructor === "Vinh Giang"
+                          ? "https://www.seymourcentre.com/media/lxbhfn53/webpage-alternate-01.jpg?anchor=center&mode=crop&width=1024&height=768&rnd=133699326099570000"
+                          : "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Tony_Robbins.jpg/640px-Tony_Robbins.jpg"
                     }
                     alt={masterclass.instructor}
-                    className="h-14 w-14 rounded-full mr-4"
+                    className="h-14 w-14 rounded-full mr-4 object-cover"
                   />
                   <div>
                     <h3 className="font-medium text-gray-900">{masterclass.instructor}</h3>
@@ -553,27 +551,27 @@ const MasterclassDetail: React.FC = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions</h2>
-                
+
                 <div className="space-y-4">
                   <button className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                     <BookOpen className="mr-2 h-5 w-5" />
                     Continue Learning
                   </button>
-                  
+
                   <button className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                     <Download className="mr-2 h-5 w-5" />
                     Download All Resources
                   </button>
-                  
+
                   <button className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                     <Share2 className="mr-2 h-5 w-5" />
                     Share
                   </button>
                 </div>
-                
+
                 <div className="mt-6 pt-6 border-t border-gray-200">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Need Personalized Help?</h2>
                   <Link
@@ -588,12 +586,12 @@ const MasterclassDetail: React.FC = () => {
             </div>
           </div>
         </div>
-        
+
         {/* Related Masterclasses */}
         {relatedClasses.length > 0 && (
           <div className="mt-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Related Masterclasses</h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {relatedClasses.map((related) => (
                 <div key={related.id} className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1">
@@ -607,7 +605,7 @@ const MasterclassDetail: React.FC = () => {
                       {related.category}
                     </div>
                   </div>
-                  
+
                   <div className="p-6">
                     <div className="flex items-center text-sm text-gray-500 mb-2">
                       <Clock className="h-4 w-4 mr-1" />
@@ -615,10 +613,10 @@ const MasterclassDetail: React.FC = () => {
                       <span className="mx-2">•</span>
                       <span>{related.level}</span>
                     </div>
-                    
+
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">{related.title}</h3>
                     <p className="text-gray-600 mb-4">{related.description}</p>
-                    
+
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <div className="flex items-center">
@@ -628,7 +626,7 @@ const MasterclassDetail: React.FC = () => {
                         <span className="mx-2 text-gray-300">|</span>
                         <span className="text-gray-600">By {related.instructor}</span>
                       </div>
-                      
+
                       <Link
                         to={`/masterclass/${related.id}`}
                         className="text-indigo-600 hover:text-indigo-500 font-medium"

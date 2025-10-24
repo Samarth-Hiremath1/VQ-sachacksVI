@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -11,6 +11,10 @@ import Schedule from './pages/Schedule';
 import NotFound from './pages/NotFound';
 
 function App() {
+  useEffect(() => {
+    document.title = 'VQ';
+  }, []);
+
   return (
     <Router>
       <div className="flex flex-col min-h-screen">
