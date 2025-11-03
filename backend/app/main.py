@@ -8,6 +8,7 @@ import logging
 from .core.config import settings
 from .core.database import check_database_health
 from .core.redis import check_redis_health
+from .core.minio_client import get_minio_client
 from .api.v1.router import api_router
 
 # Configure logging
@@ -84,12 +85,15 @@ async def health_check():
 @app.get("/health/detailed")
 async def detailed_health_check():
     """Detailed health check with dependency status"""
+    minio_client = get_minio_client()
+    
     health_status = {
         "status": "healthy",
         "timestamp": time.time(),
         "services": {
             "database": check_database_health(),
-            "redis": check_redis_health()
+            "redis": check_redis_health(),
+            "minio": minio_client.health_check()
         }
     }
     
@@ -113,11 +117,29 @@ app.include_router(api_router, prefix=settings.api_v1_prefix)
 async def startup_event():
     logger.info("Starting AI Communication Coaching Platform API")
     logger.info(f"API documentation available at: /docs")
+    
+    # Start background task scheduler
+    try:
+        from .services.background_tasks import get_background_service
+        background_service = get_background_service()
+        await background_service.start_scheduler()
+        logger.info("Background task scheduler started")
+    except Exception as e:
+        logger.error(f"Failed to start background task scheduler: {e}")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     logger.info("Shutting down AI Communication Coaching Platform API")
+    
+    # Stop background task scheduler
+    try:
+        from .services.background_tasks import get_background_service
+        background_service = get_background_service()
+        await background_service.stop_scheduler()
+        logger.info("Background task scheduler stopped")
+    except Exception as e:
+        logger.error(f"Failed to stop background task scheduler: {e}")
 
 
 # Root endpoint
