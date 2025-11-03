@@ -1,0 +1,73 @@
+# Development overrides for Docker Compose
+# Use with: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  # Development-specific PostgreSQL configuration
+  postgres:
+    environment:
+      POSTGRES_DB: coaching_platform_dev
+    ports:
+      - "5432:5432"  # Expose for external tools
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./scripts/init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh
+
+  # Development Redis with persistence disabled for faster startup
+  redis:
+    command: redis-server --save "" --appendonly no
+    ports:
+      - "6379:6379"  # Expose for external tools
+
+  # Development MinIO with debug logging
+  minio:
+    environment:
+      MINIO_ROOT_USER: dev_access_key
+      MINIO_ROOT_PASSWORD: dev_secret_key_12345
+    command: server /data --console-address ":9001" --address ":9000"
+
+  # Development Airflow with debug mode
+  airflow-webserver:
+    environment:
+      AIRFLOW__WEBSERVER__RELOAD_ON_PLUGIN_CHANGE: 'true'
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'true'  # Load examples in dev
+      AIRFLOW__LOGGING__LOGGING_LEVEL: DEBUG
+
+  airflow-scheduler:
+    environment:
+      AIRFLOW__LOGGING__LOGGING_LEVEL: DEBUG
+      AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: 30  # Faster DAG scanning
+
+  # Development MLflow with local artifact storage
+  mlflow:
+    environment:
+      MLFLOW_BACKEND_STORE_URI: sqlite:///mlflow.db
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: ./mlruns
+    volumes:
+      - mlflow_dev_data:/app/mlruns
+
+  # Development Prometheus with shorter retention
+  prometheus:
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=24h'  # Shorter retention for dev
+      - '--web.enable-lifecycle'
+      - '--log.level=debug'
+
+  # Development Grafana with development plugins
+  grafana:
+    environment:
+      GF_SECURITY_ADMIN_USER: dev
+      GF_SECURITY_ADMIN_PASSWORD: dev
+      GF_USERS_ALLOW_SIGN_UP: true
+      GF_INSTALL_PLUGINS: grafana-piechart-panel,grafana-clock-panel
+      GF_LOG_LEVEL: debug
+
+volumes:
+  postgres_dev_data:
+    driver: local
+  mlflow_dev_data:
+    driver: local

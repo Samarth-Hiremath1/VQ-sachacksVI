@@ -23,3 +23,39 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Docker and Infrastructure
+docker-compose.override.yml
+.docker/
+
+# Airflow
+airflow/logs/
+airflow/plugins/__pycache__/
+airflow/dags/__pycache__/
+
+# ML and Data
+*.pkl
+*.joblib
+*.h5
+*.pb
+mlruns/
+artifacts/
+
+# Monitoring data
+prometheus_data/
+grafana_data/
+
+# Database dumps
+*.sql
+*.dump
+
+# Secrets and certificates
+*.key
+*.pem
+*.crt
+secrets/
