@@ -11,7 +11,9 @@ node_modules
 dist
 dist-ssr
 *.local
-*./kiro
+
+# Kiro IDE files (keep local only)
+.kiro/
 
 # Editor directories and files
 .vscode/*
