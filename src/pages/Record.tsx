@@ -21,6 +21,63 @@ const Record: React.FC = () => {
   const poseRef = useRef<Pose | null>(null);
   const cameraRef = useRef<cameraUtils.Camera | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  
+  // Real-time feedback states
+  const [postureScore, setPostureScore] = useState<number>(0);
+  const [gestureQuality, setGestureQuality] = useState<string>('Neutral');
+  const [speakingPace, setSpeakingPace] = useState<number>(0);
+  const [volumeLevel, setVolumeLevel] = useState<number>(0);
+  const [fillerWordCount, setFillerWordCount] = useState<number>(0);
+  const wordCountRef = useRef<number>(0);
+  const startTimeRef = useRef<number>(0);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+
+  // Helper function to analyze posture from pose landmarks
+  const analyzePosture = (landmarks: any[]) => {
+    if (!landmarks || landmarks.length < 33) return 0;
+    
+    // Get key landmarks for posture analysis
+    const leftShoulder = landmarks[11];
+    const rightShoulder = landmarks[12];
+    const leftHip = landmarks[23];
+    const rightHip = landmarks[24];
+    const nose = landmarks[0];
+    
+    // Calculate shoulder alignment (should be level)
+    const shoulderDiff = Math.abs(leftShoulder.y - rightShoulder.y);
+    const shoulderScore = Math.max(0, 100 - (shoulderDiff * 500));
+    
+    // Calculate spine alignment (shoulders should be above hips)
+    const avgShoulderY = (leftShoulder.y + rightShoulder.y) / 2;
+    const avgHipY = (leftHip.y + rightHip.y) / 2;
+    const spineAlignment = avgShoulderY < avgHipY ? 100 : 50;
+    
+    // Calculate head position (nose should be roughly centered above shoulders)
+    const avgShoulderX = (leftShoulder.x + rightShoulder.x) / 2;
+    const headAlignment = Math.max(0, 100 - (Math.abs(nose.x - avgShoulderX) * 300));
+    
+    // Overall posture score
+    return Math.round((shoulderScore + spineAlignment + headAlignment) / 3);
+  };
+  
+  // Helper function to analyze gestures
+  const analyzeGestures = (landmarks: any[]) => {
+    if (!landmarks || landmarks.length < 33) return 'No Detection';
+    
+    const leftWrist = landmarks[15];
+    const rightWrist = landmarks[16];
+    const leftShoulder = landmarks[11];
+    const rightShoulder = landmarks[12];
+    
+    // Check if hands are visible and active
+    const leftHandActive = leftWrist.visibility > 0.5 && leftWrist.y < leftShoulder.y;
+    const rightHandActive = rightWrist.visibility > 0.5 && rightWrist.y < rightShoulder.y;
+    
+    if (leftHandActive && rightHandActive) return 'Active - Both Hands';
+    if (leftHandActive || rightHandActive) return 'Active - One Hand';
+    return 'Neutral';
+  };
 
   // Initialize MediaPipe Pose
   useEffect(() => {
@@ -60,6 +117,14 @@ const Record: React.FC = () => {
             lineWidth: 2,
             radius: 4,
           });
+          
+          // Analyze posture and gestures in real-time
+          if (recording) {
+            const posture = analyzePosture(results.poseLandmarks);
+            const gesture = analyzeGestures(results.poseLandmarks);
+            setPostureScore(posture);
+            setGestureQuality(gesture);
+          }
         }
       }
     });
@@ -69,7 +134,7 @@ const Record: React.FC = () => {
     return () => {
       pose.close();
     };
-  }, []);
+  }, [recording]);
 
   // Initialize Web Speech API
   useEffect(() => {
@@ -88,11 +153,33 @@ const Record: React.FC = () => {
           const transcriptPiece = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
             finalTranscript += transcriptPiece + ' ';
+            
+            // Count words for pace calculation
+            const words = finalTranscript.trim().split(/\s+/).filter(w => w.length > 0);
+            wordCountRef.current += words.length;
+            
+            // Calculate speaking pace (WPM)
+            if (startTimeRef.current > 0) {
+              const elapsedMinutes = (Date.now() - startTimeRef.current) / 60000;
+              const wpm = Math.round(wordCountRef.current / elapsedMinutes);
+              setSpeakingPace(wpm);
+            }
+            
+            // Detect filler words
+            const fillerWords = ['um', 'uh', 'like', 'you know', 'so', 'actually', 'basically', 'literally'];
+            const lowerText = finalTranscript.toLowerCase();
+            let count = 0;
+            fillerWords.forEach(filler => {
+              const regex = new RegExp(`\\b${filler}\\b`, 'gi');
+              const matches = lowerText.match(regex);
+              if (matches) count += matches.length;
+            });
+            setFillerWordCount(prev => prev + count);
           } else {
             interimTranscript += transcriptPiece;
           }
         }
-        setTranscript(finalTranscript + interimTranscript);
+        setTranscript(prev => prev + finalTranscript + interimTranscript);
       };
 
       recognition.onerror = (event: Event) => {
@@ -151,6 +238,13 @@ const Record: React.FC = () => {
     setRecordingComplete(false);
     setAnalysisComplete(false);
     setTranscript('');
+    setPostureScore(0);
+    setGestureQuality('Neutral');
+    setSpeakingPace(0);
+    setVolumeLevel(0);
+    setFillerWordCount(0);
+    wordCountRef.current = 0;
+    startTimeRef.current = Date.now();
 
     if (webcamRef.current && webcamRef.current.stream) {
       mediaRecorderRef.current = new MediaRecorder(webcamRef.current.stream, {
@@ -172,8 +266,39 @@ const Record: React.FC = () => {
       if (recognitionRef.current) {
         recognitionRef.current.start();
       }
+      
+      // Setup audio volume monitoring
+      try {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        const audioContext = new AudioContext();
+        const analyser = audioContext.createAnalyser();
+        const microphone = audioContext.createMediaStreamSource(webcamRef.current.stream);
+        
+        analyser.smoothingTimeConstant = 0.8;
+        analyser.fftSize = 1024;
+        
+        microphone.connect(analyser);
+        
+        audioContextRef.current = audioContext;
+        analyserRef.current = analyser;
+        
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        
+        const updateVolume = () => {
+          if (analyserRef.current && recording) {
+            analyserRef.current.getByteFrequencyData(dataArray);
+            const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+            setVolumeLevel(Math.round((average / 255) * 100));
+            requestAnimationFrame(updateVolume);
+          }
+        };
+        
+        updateVolume();
+      } catch (error) {
+        console.error('Error setting up audio monitoring:', error);
+      }
     }
-  }, []);
+  }, [recording]);
 
   const handleStopRecording = useCallback(() => {
     if (mediaRecorderRef.current) {
@@ -181,6 +306,10 @@ const Record: React.FC = () => {
     }
     if (recognitionRef.current) {
       recognitionRef.current.stop();
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
     }
     setRecording(false);
     setRecordingComplete(true);
@@ -381,11 +510,95 @@ const Record: React.FC = () => {
           </div>
         </div>
 
+        {/* Real-time Feedback Dashboard */}
+        {recording && (
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium text-gray-700">Posture Score</h4>
+                <span className={`text-2xl font-bold ${postureScore >= 70 ? 'text-green-600' : postureScore >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                  {postureScore}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className={`h-2 rounded-full transition-all duration-300 ${postureScore >= 70 ? 'bg-green-600' : postureScore >= 50 ? 'bg-yellow-600' : 'bg-red-600'}`}
+                  style={{ width: `${postureScore}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                {postureScore >= 70 ? 'Excellent posture!' : postureScore >= 50 ? 'Good, keep it up' : 'Stand straighter'}
+              </p>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium text-gray-700">Gestures</h4>
+                <span className={`text-sm font-semibold ${gestureQuality.includes('Active') ? 'text-green-600' : 'text-gray-600'}`}>
+                  {gestureQuality}
+                </span>
+              </div>
+              <div className="flex items-center justify-center h-8">
+                <div className={`w-3 h-3 rounded-full ${gestureQuality.includes('Both') ? 'bg-green-500 animate-pulse' : gestureQuality.includes('One') ? 'bg-yellow-500' : 'bg-gray-400'}`}></div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                {gestureQuality.includes('Active') ? 'Great hand movements!' : 'Use more gestures'}
+              </p>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium text-gray-700">Speaking Pace</h4>
+                <span className={`text-2xl font-bold ${speakingPace >= 120 && speakingPace <= 150 ? 'text-green-600' : 'text-yellow-600'}`}>
+                  {speakingPace}
+                </span>
+              </div>
+              <p className="text-xs text-gray-600">WPM (words/min)</p>
+              <p className="text-xs text-gray-500 mt-2">
+                {speakingPace === 0 ? 'Start speaking...' : speakingPace >= 120 && speakingPace <= 150 ? 'Perfect pace!' : speakingPace < 120 ? 'Speak a bit faster' : 'Slow down slightly'}
+              </p>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium text-gray-700">Volume Level</h4>
+                <span className={`text-2xl font-bold ${volumeLevel >= 40 && volumeLevel <= 80 ? 'text-green-600' : 'text-yellow-600'}`}>
+                  {volumeLevel}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className={`h-2 rounded-full transition-all duration-150 ${volumeLevel >= 40 && volumeLevel <= 80 ? 'bg-green-600' : 'bg-yellow-600'}`}
+                  style={{ width: `${volumeLevel}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                {volumeLevel < 40 ? 'Speak louder' : volumeLevel > 80 ? 'Lower your voice' : 'Good volume!'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Filler Words Counter */}
+        {recording && fillerWordCount > 0 && (
+          <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <MessageSquare className="h-5 w-5 text-yellow-600 mr-2" />
+              <span className="text-sm font-medium text-yellow-800">
+                Filler words detected: <span className="font-bold">{fillerWordCount}</span>
+              </span>
+              <span className="ml-2 text-xs text-yellow-600">
+                (Try to pause instead of using "um", "uh", "like")
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Live Speech-to-Text Component */}
         {recording && (
           <div className="mt-6 bg-white rounded-lg shadow-lg p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-2">Live Transcript</h3>
-            <div className="text-gray-700 text-base leading-relaxed">
+            <div className="text-gray-700 text-base leading-relaxed max-h-40 overflow-y-auto">
               {transcript || 'Listening...'}
             </div>
           </div>
